@@ -50,7 +50,56 @@ function Lista({ titulo, itens, mensagemVazia, renderizarItem }) {
   </section>;
 }
 
-function PainelProfessor({ professor, aoSair }) {
+function CriarTurma({ professor, aoVoltar, aoCriar }) {
+  const [nome, setNome] = useState('');
+  const [erro, setErro] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
+  const criar = async (evento) => {
+    evento.preventDefault();
+    setErro('');
+    setSalvando(true);
+
+    try {
+      const resposta = await fetch('/api/turmas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, professorId: professor.id }),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) throw new Error(dados.erro || 'Não foi possível criar a turma.');
+      aoCriar(dados);
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return <main className="pagina-principal pagina-criar-turma">
+    <header className="cabecalho-pagina">
+      <div>
+        <div className="marca marca-pequena"><span className="marca-icone">A</span><span>Away</span></div>
+        <p className="saudacao">Olá, {professor.nome}!</p>
+        <h1>Criar turma</h1>
+        <p className="subtitulo">Cadastre uma nova turma vinculada automaticamente a você.</p>
+      </div>
+    </header>
+    <form onSubmit={criar} className="formulario formulario-turma">
+      <label htmlFor="nome-turma">Nome da turma
+        <input id="nome-turma" type="text" value={nome} onChange={(evento) => setNome(evento.target.value)} placeholder="Ex.: Funcional iniciante" autoFocus required />
+      </label>
+      <p className="informacao-vinculo">Professor responsável: <strong>{professor.nome}</strong></p>
+      {erro && <p className="erro" role="alert">{erro}</p>}
+      <div className="acoes-formulario">
+        <button className="botao-secundario" type="button" onClick={aoVoltar}>Cancelar</button>
+        <button type="submit" disabled={salvando}>{salvando ? 'Criando...' : 'Criar turma'}</button>
+      </div>
+    </form>
+  </main>;
+}
+
+function PainelProfessor({ professor, aoSair, aoCriarTurma }) {
   const [turmas, setTurmas] = useState([]);
   const [alunos, setAlunos] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -86,7 +135,7 @@ function PainelProfessor({ professor, aoSair }) {
       </div>
       <button className="botao-sair" type="button" onClick={sair}>Sair</button>
     </header>
-    <div className="barra-acoes"><h2>Visão geral</h2><button type="button">Criar turma</button></div>
+    <div className="barra-acoes"><h2>Visão geral</h2><button type="button" onClick={aoCriarTurma}>Criar turma</button></div>
     {carregando && <p className="estado">Carregando suas informações...</p>}
     {erro && <p className="erro" role="alert">{erro}</p>}
     {!carregando && !erro && <div className="listas">
@@ -100,7 +149,11 @@ function App() {
   const [professor, setProfessor] = useState(() => {
     try { return JSON.parse(localStorage.getItem('away-professor')) || null; } catch { return null; }
   });
-  return professor ? <PainelProfessor professor={professor} aoSair={() => setProfessor(null)} /> : <Login aoEntrar={setProfessor} />;
+  const [tela, setTela] = useState('painel');
+
+  if (!professor) return <Login aoEntrar={(dados) => { setProfessor(dados); setTela('painel'); }} />;
+  if (tela === 'criar-turma') return <CriarTurma professor={professor} aoVoltar={() => setTela('painel')} aoCriar={() => setTela('painel')} />;
+  return <PainelProfessor professor={professor} aoSair={() => setProfessor(null)} aoCriarTurma={() => setTela('criar-turma')} />;
 }
 
 createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>);
