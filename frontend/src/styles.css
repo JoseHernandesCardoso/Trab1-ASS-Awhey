@@ -33,6 +33,13 @@ input:focus { outline: 2px solid #bfdbfe; border-color: #2563eb; }
 .botao-sair:hover { background: #e2e8f0; }
 .barra-acoes { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 30px 0 18px; }
 .barra-acoes h2 { margin: 0; font-size: 1.2rem; }
+.pagina-criar-turma { max-width: 680px; }
+.formulario-turma { max-width: 500px; margin-top: 30px; }
+.informacao-vinculo { padding: 13px 15px; border-radius: 8px; color: #475569; background: #f8fafc; }
+.acoes-formulario { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.botao-secundario { color: #475569; background: #eef2f7; }
+.botao-secundario:hover { background: #e2e8f0; }
+button:disabled { opacity: .65; cursor: wait; }
 .listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .secao-lista { min-height: 230px; padding: 22px; border: 1px solid #e5eaf1; border-radius: 12px; }
 .titulo-secao { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
