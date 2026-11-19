@@ -3,42 +3,53 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 
 const loginInicial = { email: '', senha: '' };
+const cadastroInicial = { nome: '', email: '', senha: '', cref: '' };
 
 function Login({ aoEntrar }) {
   const [formulario, setFormulario] = useState(loginInicial);
+  const [cadastro, setCadastro] = useState(cadastroInicial);
+  const [cadastrando, setCadastrando] = useState(false);
   const [erro, setErro] = useState('');
+  const [mensagem, setMensagem] = useState('');
 
   const entrar = async (evento) => {
     evento.preventDefault();
-    setErro('');
-    const resposta = await fetch('/api/login/professor', {
+    setErro(''); setMensagem('');
+    const dadosFormulario = cadastrando ? cadastro : formulario;
+    const resposta = await fetch(cadastrando ? '/api/professores' : '/api/login/professor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formulario),
+      body: JSON.stringify(dadosFormulario),
     });
     const dados = await resposta.json();
     if (!resposta.ok) return setErro(dados.erro);
+    if (cadastrando) {
+      setFormulario({ email: cadastro.email, senha: cadastro.senha });
+      setCadastro(cadastroInicial); setCadastrando(false);
+      setMensagem('Conta criada. Entre com seu email e senha.');
+      return;
+    }
     localStorage.setItem('away-professor', JSON.stringify(dados));
     aoEntrar(dados);
   };
 
   return <main className="pagina-login">
-    <aside className="credenciais-acesso">
-      <h2>Acessos de demonstração</h2>
-      <p>Use uma das contas abaixo para entrar:</p>
-      <div className="credencial"><strong>Marina Oliveira</strong><span>marina.professora@away.com</span><span>Senha: senha123</span></div>
-      <div className="credencial"><strong>Rafael Santos</strong><span>rafael.professor@away.com</span><span>Senha: senha123</span></div>
-    </aside>
     <section className="cartao login-cartao">
       <div className="marca"><span className="marca-icone">A</span><span>Away</span></div>
-      <h1>Entrar como professor</h1>
-      <p className="subtitulo">Acesse suas turmas e alunos.</p>
+      <h1>{cadastrando ? 'Criar conta de professor' : 'Entrar como professor'}</h1>
+      <p className="subtitulo">{cadastrando ? 'Cadastre seus dados para começar.' : 'Acesse suas turmas e alunos.'}</p>
       <form onSubmit={entrar} className="formulario login-formulario">
-        <label>Email<input type="email" autoComplete="username" value={formulario.email} onChange={(evento) => setFormulario({ ...formulario, email: evento.target.value })} placeholder="professor@exemplo.com" required /></label>
-        <label>Senha<input type="password" autoComplete="current-password" value={formulario.senha} onChange={(evento) => setFormulario({ ...formulario, senha: evento.target.value })} placeholder="Digite sua senha" required /></label>
+        {cadastrando && <label>Nome<input value={cadastro.nome} onChange={(evento) => setCadastro({ ...cadastro, nome: evento.target.value })} required /></label>}
+        <label>Email<input type="email" autoComplete="username" value={cadastrando ? cadastro.email : formulario.email} onChange={(evento) => cadastrando ? setCadastro({ ...cadastro, email: evento.target.value }) : setFormulario({ ...formulario, email: evento.target.value })} placeholder="professor@exemplo.com" required /></label>
+        <label>Senha<input type="password" autoComplete={cadastrando ? 'new-password' : 'current-password'} value={cadastrando ? cadastro.senha : formulario.senha} onChange={(evento) => cadastrando ? setCadastro({ ...cadastro, senha: evento.target.value }) : setFormulario({ ...formulario, senha: evento.target.value })} placeholder="Digite sua senha" required /></label>
+        {cadastrando && <label>CREF<input value={cadastro.cref} onChange={(evento) => setCadastro({ ...cadastro, cref: evento.target.value })} placeholder="Ex.: CREF-0003" required /></label>}
+        {mensagem && <p className="sucesso" role="status">{mensagem}</p>}
         {erro && <p className="erro" role="alert">{erro}</p>}
-        <button type="submit">Entrar</button>
+        <button type="submit">{cadastrando ? 'Criar conta' : 'Entrar'}</button>
       </form>
+      <button className="botao-link" type="button" onClick={() => { setCadastrando(!cadastrando); setErro(''); setMensagem(''); }}>
+        {cadastrando ? 'Já tenho uma conta' : 'Criar conta'}
+      </button>
     </section>
   </main>;
 }

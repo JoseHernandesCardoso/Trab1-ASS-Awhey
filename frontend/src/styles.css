@@ -5,12 +5,6 @@ button, input { font: inherit; }
 button { border: 0; border-radius: 8px; color: white; background: #2563eb; cursor: pointer; font-weight: 700; padding: 11px 18px; }
 button:hover { background: #1d4ed8; }
 .pagina-login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-.credenciais-acesso { position: fixed; top: 24px; right: 24px; width: 270px; padding: 18px; border: 1px solid #bfdbfe; border-radius: 12px; color: #334155; background: #eff6ff; box-shadow: 0 8px 22px rgb(27 55 89 / 8%); font-size: .86rem; }
-.credenciais-acesso h2 { margin: 0 0 7px; color: #1e3a8a; font-size: 1rem; }
-.credenciais-acesso p { margin: 0 0 14px; color: #64748b; line-height: 1.4; }
-.credencial { display: grid; gap: 3px; padding: 10px 0; border-top: 1px solid #dbeafe; }
-.credencial strong { color: #1e40af; }
-.credencial span { overflow-wrap: anywhere; }
 .cartao, .pagina-principal { background: white; border: 1px solid #e5eaf1; border-radius: 16px; box-shadow: 0 12px 35px rgb(27 55 89 / 8%); }
 .login-cartao { width: min(100%, 430px); padding: 40px; }
 .marca { display: flex; align-items: center; gap: 10px; color: #2563eb; font-size: 1.3rem; font-weight: 700; }
@@ -25,6 +19,9 @@ label { display: grid; gap: 7px; font-size: .9rem; font-weight: 700; }
 input { width: 100%; padding: 12px; border: 1px solid #d7dee8; border-radius: 8px; color: inherit; }
 input:focus { outline: 2px solid #bfdbfe; border-color: #2563eb; }
 .erro { color: #b42318; line-height: 1.4; }
+.sucesso { color: #15803d; line-height: 1.4; }
+.botao-link { width: 100%; margin-top: 18px; padding: 8px; color: #2563eb; background: transparent; }
+.botao-link:hover { color: #1d4ed8; background: #eff6ff; }
 .pagina-principal { width: min(100% - 32px, 980px); margin: 40px auto; padding: 38px; }
 .cabecalho-pagina { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 28px; border-bottom: 1px solid #edf0f5; }
 .cabecalho-pagina h1 { font-size: 2rem; }
@@ -55,8 +52,6 @@ button:disabled { opacity: .65; cursor: wait; }
 .estado, .estado-vazio { color: #718096; }
 .estado-vazio { margin: 35px 0 10px; text-align: center; }
 @media (max-width: 700px) {
-  .pagina-login { display: flex; flex-direction: column; }
-  .credenciais-acesso { position: static; width: min(100%, 430px); margin-bottom: 16px; }
   .pagina-principal { width: min(100% - 20px, 980px); margin: 10px auto; padding: 24px 18px; }
   .login-cartao { padding: 28px 22px; }
   .cabecalho-pagina { flex-direction: column; }
