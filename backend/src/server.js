@@ -26,6 +26,16 @@ const dadosObrigatorios = (body) => ({
   cref: body.cref?.trim().toUpperCase()
 });
 
+app.post('/api/login/professor', (request, response) => {
+  const email = request.body.email?.trim().toLowerCase();
+  const senha = request.body.senha;
+  if (!email || !senha) return response.status(400).json({ erro: 'Email e senha são obrigatórios.' });
+
+  const professor = database.prepare('SELECT id, nome, email, cref FROM professores WHERE email = ? AND senha = ?').get(email, senha);
+  if (!professor) return response.status(401).json({ erro: 'Email ou senha inválidos.' });
+  response.json(professorPublico(professor));
+});
+
 app.get('/api/professores', (_request, response) => {
   response.json(database.prepare('SELECT id, nome, email, cref FROM professores ORDER BY nome').all());
 });

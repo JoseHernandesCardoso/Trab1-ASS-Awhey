@@ -5,8 +5,14 @@ import './styles.css';
 const professorInicial = { nome: '', email: '', senha: '', cref: '' };
 const turmaInicial = { nome: '', professorId: '' };
 const alunoInicial = { nome: '', email: '', senha: '' };
+const loginInicial = { email: '', senha: '' };
 
 function App() {
+  const [professorLogado, setProfessorLogado] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('away-professor')) || null; } catch { return null; }
+  });
+  const [loginForm, setLoginForm] = useState(loginInicial);
+  const [loginErro, setLoginErro] = useState('');
   const [professores, setProfessores] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [alunos, setAlunos] = useState([]);
@@ -27,8 +33,18 @@ function App() {
     setAlunos(await alunosResposta.json());
   };
 
-  useEffect(() => { carregar().catch((error) => setErro(error.message)); }, []);
+  useEffect(() => { if (professorLogado) carregar().catch((error) => setErro(error.message)); }, [professorLogado]);
   const limparMensagens = () => { setErro(''); setMensagem(''); };
+  const entrar = async (evento) => {
+    evento.preventDefault();
+    setLoginErro('');
+    const resposta = await fetch('/api/login/professor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginForm) });
+    const dados = await resposta.json();
+    if (!resposta.ok) return setLoginErro(dados.erro);
+    localStorage.setItem('away-professor', JSON.stringify(dados));
+    setProfessorLogado(dados);
+  };
+  const sair = () => { localStorage.removeItem('away-professor'); setProfessorLogado(null); setLoginForm(loginInicial); };
   const cancelarProfessor = () => { setEditandoProfessor(null); setProfessorForm(professorInicial); };
   const cancelarTurma = () => { setEditandoTurma(null); setTurmaForm(turmaInicial); };
   const cancelarAluno = () => { setEditandoAluno(null); setAlunoForm(alunoInicial); };
@@ -67,8 +83,20 @@ function App() {
     await carregar(); setMensagem(`${nome[0].toUpperCase()}${nome.slice(1)} excluído.`);
   };
 
+  if (!professorLogado) return <main className="container login-container">
+    <div className="marca"><span className="marca-icone">A</span><span>Away</span></div>
+    <h1>Entrar como professor</h1>
+    <p className="subtitulo">Acesse o gerenciamento das suas turmas.</p>
+    <form onSubmit={entrar} className="formulario login-formulario">
+      <label>Email<input name="email" type="email" autoComplete="username" value={loginForm.email} onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })} placeholder="professor@exemplo.com" required /></label>
+      <label>Senha<input name="senha" type="password" autoComplete="current-password" value={loginForm.senha} onChange={(e) => setLoginForm({ ...loginForm, senha: e.target.value })} placeholder="Digite sua senha" required /></label>
+      {loginErro && <p className="erro" role="alert">{loginErro}</p>}
+      <button type="submit">Entrar</button>
+    </form>
+  </main>;
+
   return <main className="container">
-    <h1>Away</h1><p className="subtitulo">Cadastre e gerencie professores e turmas.</p>
+    <header className="cabecalho-pagina"><div><h1>Away</h1><p className="subtitulo">Olá, {professorLogado.nome}. Gerencie suas turmas.</p></div><button className="secundario" onClick={sair}>Sair</button></header>
     <form onSubmit={salvarAluno} className="formulario"><h2>{editandoAluno ? 'Editar aluno' : 'Novo aluno'}</h2>
       <label>Nome<input name="nome" value={alunoForm.nome} onChange={(e) => setAlunoForm({ ...alunoForm, nome: e.target.value })} required /></label><label>Email<input name="email" type="email" value={alunoForm.email} onChange={(e) => setAlunoForm({ ...alunoForm, email: e.target.value })} required /></label><label>Senha<input name="senha" type="password" value={alunoForm.senha} onChange={(e) => setAlunoForm({ ...alunoForm, senha: e.target.value })} required={!editandoAluno} /></label>
       <div className="acoes"><button type="submit">{editandoAluno ? 'Salvar alterações' : 'Cadastrar aluno'}</button>{editandoAluno && <button type="button" className="secundario" onClick={cancelarAluno}>Cancelar</button>}</div>
