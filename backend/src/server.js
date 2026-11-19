@@ -30,6 +30,73 @@ app.get('/api/professores', (_request, response) => {
   response.json(database.prepare('SELECT id, nome, email, cref FROM professores ORDER BY nome').all());
 });
 
+const turmaPublica = (turma) => ({
+  id: turma.id,
+  nome: turma.nome,
+  professorId: turma.professor_id,
+  professorNome: turma.professor_nome
+});
+
+const dadosDaTurma = (body) => ({
+  nome: body.nome?.trim(),
+  professorId: Number(body.professorId)
+});
+
+const buscarTurma = (id) => database.prepare(`
+  SELECT turmas.id, turmas.nome, turmas.professor_id, professores.nome AS professor_nome
+  FROM turmas
+  JOIN professores ON professores.id = turmas.professor_id
+  WHERE turmas.id = ?
+`).get(id);
+
+app.get('/api/turmas', (_request, response) => {
+  const turmas = database.prepare(`
+    SELECT turmas.id, turmas.nome, turmas.professor_id, professores.nome AS professor_nome
+    FROM turmas
+    JOIN professores ON professores.id = turmas.professor_id
+    ORDER BY turmas.nome
+  `).all();
+  response.json(turmas.map(turmaPublica));
+});
+
+app.get('/api/turmas/:id', (request, response) => {
+  const turma = buscarTurma(request.params.id);
+  if (!turma) return response.status(404).json({ erro: 'Turma não encontrada.' });
+  response.json(turmaPublica(turma));
+});
+
+app.post('/api/turmas', (request, response) => {
+  const { nome, professorId } = dadosDaTurma(request.body);
+  if (!nome || !Number.isInteger(professorId) || professorId < 1) {
+    return response.status(400).json({ erro: 'Nome e professor são obrigatórios.' });
+  }
+  const professor = database.prepare('SELECT id FROM professores WHERE id = ?').get(professorId);
+  if (!professor) return response.status(400).json({ erro: 'Professor não encontrado.' });
+
+  const resultado = database.prepare('INSERT INTO turmas (nome, professor_id) VALUES (?, ?)').run(nome, professorId);
+  response.status(201).json(turmaPublica(buscarTurma(resultado.lastInsertRowid)));
+});
+
+app.put('/api/turmas/:id', (request, response) => {
+  const atual = database.prepare('SELECT * FROM turmas WHERE id = ?').get(request.params.id);
+  if (!atual) return response.status(404).json({ erro: 'Turma não encontrada.' });
+  const dados = dadosDaTurma({ ...atual, ...request.body, professorId: request.body.professorId ?? atual.professor_id });
+  if (!dados.nome || !Number.isInteger(dados.professorId) || dados.professorId < 1) {
+    return response.status(400).json({ erro: 'Nome e professor são obrigatórios.' });
+  }
+  const professor = database.prepare('SELECT id FROM professores WHERE id = ?').get(dados.professorId);
+  if (!professor) return response.status(400).json({ erro: 'Professor não encontrado.' });
+
+  database.prepare('UPDATE turmas SET nome = ?, professor_id = ? WHERE id = ?').run(dados.nome, dados.professorId, request.params.id);
+  response.json(turmaPublica(buscarTurma(request.params.id)));
+});
+
+app.delete('/api/turmas/:id', (request, response) => {
+  const resultado = database.prepare('DELETE FROM turmas WHERE id = ?').run(request.params.id);
+  if (resultado.changes === 0) return response.status(404).json({ erro: 'Turma não encontrada.' });
+  response.status(204).send();
+});
+
 app.get('/api/professores/:id', (request, response) => {
   const professor = database.prepare('SELECT id, nome, email, cref FROM professores WHERE id = ?').get(request.params.id);
   if (!professor) return response.status(404).json({ erro: 'Professor não encontrado.' });

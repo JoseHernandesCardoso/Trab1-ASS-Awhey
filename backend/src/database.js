@@ -11,6 +11,13 @@ database.exec(`
     email TEXT NOT NULL UNIQUE,
     senha TEXT NOT NULL,
     cref TEXT NOT NULL UNIQUE
+  );
+
+  CREATE TABLE IF NOT EXISTS turmas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    professor_id INTEGER NOT NULL,
+    FOREIGN KEY (professor_id) REFERENCES professores (id)
   )
 `);
 
