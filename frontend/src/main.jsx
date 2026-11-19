@@ -23,6 +23,12 @@ function Login({ aoEntrar }) {
   };
 
   return <main className="pagina-login">
+    <aside className="credenciais-acesso">
+      <h2>Acessos de demonstração</h2>
+      <p>Use uma das contas abaixo para entrar:</p>
+      <div className="credencial"><strong>Marina Oliveira</strong><span>marina.professora@away.com</span><span>Senha: senha123</span></div>
+      <div className="credencial"><strong>Rafael Santos</strong><span>rafael.professor@away.com</span><span>Senha: senha123</span></div>
+    </aside>
     <section className="cartao login-cartao">
       <div className="marca"><span className="marca-icone">A</span><span>Away</span></div>
       <h1>Entrar como professor</h1>

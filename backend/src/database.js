@@ -36,4 +36,41 @@ database.exec(`
   )
 `);
 
+const inserirProfessor = database.prepare(`INSERT INTO professores (nome, email, senha, cref)
+  SELECT @nome, @email, @senha, @cref WHERE NOT EXISTS (SELECT 1 FROM professores WHERE email = @email)`);
+const inserirAluno = database.prepare(`INSERT INTO alunos (nome, email, senha)
+  SELECT @nome, @email, @senha WHERE NOT EXISTS (SELECT 1 FROM alunos WHERE email = @email)`);
+const inserirTurma = database.prepare(`INSERT INTO turmas (nome, professor_id)
+  SELECT @nome, professores.id FROM professores
+  WHERE professores.email = @professorEmail AND NOT EXISTS (
+    SELECT 1 FROM turmas WHERE turmas.nome = @nome AND turmas.professor_id = professores.id
+  )`);
+const associarAluno = database.prepare(`INSERT OR IGNORE INTO professor_alunos (professor_id, aluno_id)
+  SELECT professores.id, alunos.id FROM professores, alunos
+  WHERE professores.email = @professorEmail AND alunos.email = @alunoEmail`);
+
+database.transaction(() => {
+  [
+    { nome: 'Marina Oliveira', email: 'marina.professora@away.com', senha: 'senha123', cref: 'CREF-0001' },
+    { nome: 'Rafael Santos', email: 'rafael.professor@away.com', senha: 'senha123', cref: 'CREF-0002' },
+  ].forEach((professor) => inserirProfessor.run(professor));
+  [
+    { nome: 'Beatriz Lima', email: 'beatriz.aluna@away.com', senha: 'aluno123' },
+    { nome: 'João Costa', email: 'joao.aluno@away.com', senha: 'aluno123' },
+    { nome: 'Camila Souza', email: 'camila.aluna@away.com', senha: 'aluno123' },
+    { nome: 'Lucas Martins', email: 'lucas.aluno@away.com', senha: 'aluno123' },
+  ].forEach((aluno) => inserirAluno.run(aluno));
+  [
+    { nome: 'Funcional Iniciante', professorEmail: 'marina.professora@away.com' },
+    { nome: 'Musculação Intermediária', professorEmail: 'marina.professora@away.com' },
+    { nome: 'Corrida e Condicionamento', professorEmail: 'rafael.professor@away.com' },
+  ].forEach((turma) => inserirTurma.run(turma));
+  [
+    { professorEmail: 'marina.professora@away.com', alunoEmail: 'beatriz.aluna@away.com' },
+    { professorEmail: 'marina.professora@away.com', alunoEmail: 'joao.aluno@away.com' },
+    { professorEmail: 'rafael.professor@away.com', alunoEmail: 'camila.aluna@away.com' },
+    { professorEmail: 'rafael.professor@away.com', alunoEmail: 'lucas.aluno@away.com' },
+  ].forEach((associacao) => associarAluno.run(associacao));
+})();
+
 export default database;
