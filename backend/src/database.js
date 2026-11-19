@@ -33,6 +33,14 @@ database.exec(`
     PRIMARY KEY (professor_id, aluno_id),
     FOREIGN KEY (professor_id) REFERENCES professores (id) ON DELETE CASCADE,
     FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS turma_alunos (
+    turma_id INTEGER NOT NULL,
+    aluno_id INTEGER NOT NULL,
+    PRIMARY KEY (turma_id, aluno_id),
+    FOREIGN KEY (turma_id) REFERENCES turmas (id) ON DELETE CASCADE,
+    FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
   )
 `);
 
@@ -48,6 +56,10 @@ const inserirTurma = database.prepare(`INSERT INTO turmas (nome, professor_id)
 const associarAluno = database.prepare(`INSERT OR IGNORE INTO professor_alunos (professor_id, aluno_id)
   SELECT professores.id, alunos.id FROM professores, alunos
   WHERE professores.email = @professorEmail AND alunos.email = @alunoEmail`);
+const associarAlunoTurma = database.prepare(`INSERT OR IGNORE INTO turma_alunos (turma_id, aluno_id)
+  SELECT turmas.id, alunos.id FROM turmas, professores, alunos
+  WHERE turmas.nome = @turmaNome AND turmas.professor_id = professores.id
+    AND professores.email = @professorEmail AND alunos.email = @alunoEmail`);
 
 database.transaction(() => {
   [
@@ -71,6 +83,14 @@ database.transaction(() => {
     { professorEmail: 'rafael.professor@away.com', alunoEmail: 'camila.aluna@away.com' },
     { professorEmail: 'rafael.professor@away.com', alunoEmail: 'lucas.aluno@away.com' },
   ].forEach((associacao) => associarAluno.run(associacao));
+  [
+    { turmaNome: 'Funcional Iniciante', professorEmail: 'marina.professora@away.com', alunoEmail: 'beatriz.aluna@away.com' },
+    { turmaNome: 'Funcional Iniciante', professorEmail: 'marina.professora@away.com', alunoEmail: 'joao.aluno@away.com' },
+    { turmaNome: 'Musculação Intermediária', professorEmail: 'marina.professora@away.com', alunoEmail: 'beatriz.aluna@away.com' },
+    { turmaNome: 'Musculação Intermediária', professorEmail: 'marina.professora@away.com', alunoEmail: 'camila.aluna@away.com' },
+    { turmaNome: 'Corrida e Condicionamento', professorEmail: 'rafael.professor@away.com', alunoEmail: 'camila.aluna@away.com' },
+    { turmaNome: 'Corrida e Condicionamento', professorEmail: 'rafael.professor@away.com', alunoEmail: 'lucas.aluno@away.com' },
+  ].forEach((associacao) => associarAlunoTurma.run(associacao));
 })();
 
 export default database;

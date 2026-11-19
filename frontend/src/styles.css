@@ -33,6 +33,12 @@ input:focus { outline: 2px solid #bfdbfe; border-color: #2563eb; }
 .pagina-criar-turma { max-width: 680px; }
 .formulario-turma { max-width: 500px; margin-top: 30px; }
 .informacao-vinculo { padding: 13px 15px; border-radius: 8px; color: #475569; background: #f8fafc; }
+.selecao-alunos { display: grid; gap: 10px; padding: 16px; border: 1px solid #d7dee8; border-radius: 8px; }
+.selecao-alunos legend { padding: 0 6px; font-weight: 700; }
+.opcao-aluno { display: flex; grid-template-columns: auto 1fr; align-items: flex-start; gap: 10px; padding: 9px; border-radius: 6px; background: #f8fafc; font-weight: 400; }
+.opcao-aluno input { width: 17px; height: 17px; margin: 2px 0 0; }
+.opcao-aluno small { display: block; margin-top: 3px; color: #718096; }
+.ajuda-selecao { margin: 2px 0 0; color: #64748b; font-size: .86rem; }
 .acoes-formulario { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .botao-secundario { color: #475569; background: #eef2f7; }
 .botao-secundario:hover { background: #e2e8f0; }
@@ -47,6 +53,7 @@ button:disabled { opacity: .65; cursor: wait; }
 .item-lista:last-child { border-bottom: 0; }
 .item-lista strong, .item-lista small { display: block; }
 .item-lista small { margin-top: 3px; color: #718096; }
+.turma-item small { line-height: 1.4; }
 .icone-item { display: grid; flex: 0 0 34px; height: 34px; place-items: center; border-radius: 9px; color: #1d4ed8; background: #dbeafe; font-weight: 700; }
 .icone-item.aluno { color: #047857; background: #d1fae5; }
 .estado, .estado-vazio { color: #718096; }
