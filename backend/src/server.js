@@ -30,6 +30,51 @@ app.get('/api/professores', (_request, response) => {
   response.json(database.prepare('SELECT id, nome, email, cref FROM professores ORDER BY nome').all());
 });
 
+const alunoPublico = (aluno) => ({ id: aluno.id, nome: aluno.nome, email: aluno.email });
+const dadosDoAluno = (body) => ({ nome: body.nome?.trim(), email: body.email?.trim().toLowerCase(), senha: body.senha });
+
+app.get('/api/alunos', (_request, response) => {
+  response.json(database.prepare('SELECT id, nome, email FROM alunos ORDER BY nome').all());
+});
+
+app.get('/api/alunos/:id', (request, response) => {
+  const aluno = database.prepare('SELECT id, nome, email FROM alunos WHERE id = ?').get(request.params.id);
+  if (!aluno) return response.status(404).json({ erro: 'Aluno não encontrado.' });
+  response.json(aluno);
+});
+
+app.post('/api/alunos', (request, response) => {
+  const dados = dadosDoAluno(request.body);
+  if (!dados.nome || !dados.email || !dados.senha) return response.status(400).json({ erro: 'Nome, email e senha são obrigatórios.' });
+  try {
+    const resultado = database.prepare('INSERT INTO alunos (nome, email, senha) VALUES (?, ?, ?)').run(dados.nome, dados.email, dados.senha);
+    response.status(201).json(alunoPublico(database.prepare('SELECT id, nome, email FROM alunos WHERE id = ?').get(resultado.lastInsertRowid)));
+  } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return response.status(409).json({ erro: 'Email já cadastrado.' });
+    response.status(500).json({ erro: 'Não foi possível cadastrar o aluno.' });
+  }
+});
+
+app.put('/api/alunos/:id', (request, response) => {
+  const atual = database.prepare('SELECT * FROM alunos WHERE id = ?').get(request.params.id);
+  if (!atual) return response.status(404).json({ erro: 'Aluno não encontrado.' });
+  const dados = dadosDoAluno({ ...atual, ...request.body, senha: request.body.senha || atual.senha });
+  if (!dados.nome || !dados.email || !dados.senha) return response.status(400).json({ erro: 'Nome, email e senha são obrigatórios.' });
+  try {
+    database.prepare('UPDATE alunos SET nome = ?, email = ?, senha = ? WHERE id = ?').run(dados.nome, dados.email, dados.senha, request.params.id);
+    response.json(alunoPublico(database.prepare('SELECT id, nome, email FROM alunos WHERE id = ?').get(request.params.id)));
+  } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return response.status(409).json({ erro: 'Email já cadastrado.' });
+    response.status(500).json({ erro: 'Não foi possível atualizar o aluno.' });
+  }
+});
+
+app.delete('/api/alunos/:id', (request, response) => {
+  const resultado = database.prepare('DELETE FROM alunos WHERE id = ?').run(request.params.id);
+  if (resultado.changes === 0) return response.status(404).json({ erro: 'Aluno não encontrado.' });
+  response.status(204).send();
+});
+
 const turmaPublica = (turma) => ({
   id: turma.id,
   nome: turma.nome,

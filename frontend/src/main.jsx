@@ -4,28 +4,34 @@ import './styles.css';
 
 const professorInicial = { nome: '', email: '', senha: '', cref: '' };
 const turmaInicial = { nome: '', professorId: '' };
+const alunoInicial = { nome: '', email: '', senha: '' };
 
 function App() {
   const [professores, setProfessores] = useState([]);
   const [turmas, setTurmas] = useState([]);
+  const [alunos, setAlunos] = useState([]);
   const [professorForm, setProfessorForm] = useState(professorInicial);
   const [turmaForm, setTurmaForm] = useState(turmaInicial);
+  const [alunoForm, setAlunoForm] = useState(alunoInicial);
   const [editandoProfessor, setEditandoProfessor] = useState(null);
   const [editandoTurma, setEditandoTurma] = useState(null);
+  const [editandoAluno, setEditandoAluno] = useState(null);
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState('');
 
   const carregar = async () => {
-    const [professoresResposta, turmasResposta] = await Promise.all([fetch('/api/professores'), fetch('/api/turmas')]);
-    if (!professoresResposta.ok || !turmasResposta.ok) throw new Error('Não foi possível carregar os dados.');
+    const [professoresResposta, turmasResposta, alunosResposta] = await Promise.all([fetch('/api/professores'), fetch('/api/turmas'), fetch('/api/alunos')]);
+    if (!professoresResposta.ok || !turmasResposta.ok || !alunosResposta.ok) throw new Error('Não foi possível carregar os dados.');
     setProfessores(await professoresResposta.json());
     setTurmas(await turmasResposta.json());
+    setAlunos(await alunosResposta.json());
   };
 
   useEffect(() => { carregar().catch((error) => setErro(error.message)); }, []);
   const limparMensagens = () => { setErro(''); setMensagem(''); };
   const cancelarProfessor = () => { setEditandoProfessor(null); setProfessorForm(professorInicial); };
   const cancelarTurma = () => { setEditandoTurma(null); setTurmaForm(turmaInicial); };
+  const cancelarAluno = () => { setEditandoAluno(null); setAlunoForm(alunoInicial); };
 
   const salvarProfessor = async (evento) => {
     evento.preventDefault(); limparMensagens();
@@ -45,6 +51,15 @@ function App() {
     await carregar(); cancelarTurma(); setMensagem(id ? 'Turma atualizada.' : 'Turma cadastrada.');
   };
 
+  const salvarAluno = async (evento) => {
+    evento.preventDefault(); limparMensagens();
+    const id = editandoAluno;
+    const resposta = await fetch(id ? `/api/alunos/${id}` : '/api/alunos', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(alunoForm) });
+    const dados = await resposta.json();
+    if (!resposta.ok) return setErro(dados.erro);
+    await carregar(); cancelarAluno(); setMensagem(id ? 'Aluno atualizado.' : 'Aluno cadastrado.');
+  };
+
   const excluir = async (rota, nome, id) => {
     if (!window.confirm(`Excluir esta ${nome}?`)) return;
     const resposta = await fetch(`/api/${rota}/${id}`, { method: 'DELETE' });
@@ -54,6 +69,10 @@ function App() {
 
   return <main className="container">
     <h1>Away</h1><p className="subtitulo">Cadastre e gerencie professores e turmas.</p>
+    <form onSubmit={salvarAluno} className="formulario"><h2>{editandoAluno ? 'Editar aluno' : 'Novo aluno'}</h2>
+      <label>Nome<input name="nome" value={alunoForm.nome} onChange={(e) => setAlunoForm({ ...alunoForm, nome: e.target.value })} required /></label><label>Email<input name="email" type="email" value={alunoForm.email} onChange={(e) => setAlunoForm({ ...alunoForm, email: e.target.value })} required /></label><label>Senha<input name="senha" type="password" value={alunoForm.senha} onChange={(e) => setAlunoForm({ ...alunoForm, senha: e.target.value })} required={!editandoAluno} /></label>
+      <div className="acoes"><button type="submit">{editandoAluno ? 'Salvar alterações' : 'Cadastrar aluno'}</button>{editandoAluno && <button type="button" className="secundario" onClick={cancelarAluno}>Cancelar</button>}</div>
+    </form>
     <form onSubmit={salvarTurma} className="formulario"><h2>{editandoTurma ? 'Editar turma' : 'Nova turma'}</h2>
       <label>Nome da turma<input name="nome" value={turmaForm.nome} onChange={(e) => setTurmaForm({ ...turmaForm, nome: e.target.value })} required /></label>
       <label>Professor<select name="professorId" value={turmaForm.professorId} onChange={(e) => setTurmaForm({ ...turmaForm, professorId: e.target.value })} required><option value="">Selecione um professor</option>{professores.map((professor) => <option key={professor.id} value={professor.id}>{professor.nome}</option>)}</select></label>
@@ -61,6 +80,7 @@ function App() {
     </form>
     {mensagem && <p className="sucesso">{mensagem}</p>}{erro && <p className="erro">{erro}</p>}
     <section><h2>Turmas cadastradas</h2>{turmas.length === 0 ? <p>Nenhuma turma cadastrada.</p> : <div className="tabela"><div className="linha cabecalho turma"><span>Nome</span><span>Professor</span><span>Ações</span></div>{turmas.map((turma) => <div className="linha turma" key={turma.id}><span>{turma.nome}</span><span>{turma.professorNome}</span><span className="acoes"><button onClick={() => { setEditandoTurma(turma.id); setTurmaForm({ nome: turma.nome, professorId: String(turma.professorId) }); limparMensagens(); }}>Editar</button><button className="perigo" onClick={() => excluir('turmas', 'turma', turma.id)}>Excluir</button></span></div>)}</div>}</section>
+    <section><h2>Alunos cadastrados</h2>{alunos.length === 0 ? <p>Nenhum aluno cadastrado.</p> : <div className="tabela"><div className="linha cabecalho aluno"><span>Nome</span><span>Email</span><span>Ações</span></div>{alunos.map((aluno) => <div className="linha aluno" key={aluno.id}><span>{aluno.nome}</span><span>{aluno.email}</span><span className="acoes"><button onClick={() => { setEditandoAluno(aluno.id); setAlunoForm({ ...aluno, senha: '' }); limparMensagens(); }}>Editar</button><button className="perigo" onClick={() => excluir('alunos', 'aluno', aluno.id)}>Excluir</button></span></div>)}</div>}</section>
     <form onSubmit={salvarProfessor} className="formulario"><h2>{editandoProfessor ? 'Editar professor' : 'Novo professor'}</h2>
       <label>Nome<input name="nome" value={professorForm.nome} onChange={(e) => setProfessorForm({ ...professorForm, nome: e.target.value })} required /></label><label>Email<input name="email" type="email" value={professorForm.email} onChange={(e) => setProfessorForm({ ...professorForm, email: e.target.value })} required /></label><label>Senha<input name="senha" type="password" value={professorForm.senha} onChange={(e) => setProfessorForm({ ...professorForm, senha: e.target.value })} required={!editandoProfessor} /></label><label>CREF<input name="cref" value={professorForm.cref} onChange={(e) => setProfessorForm({ ...professorForm, cref: e.target.value })} required /></label>
       <div className="acoes"><button type="submit">{editandoProfessor ? 'Salvar alterações' : 'Cadastrar professor'}</button>{editandoProfessor && <button type="button" className="secundario" onClick={cancelarProfessor}>Cancelar</button>}</div>

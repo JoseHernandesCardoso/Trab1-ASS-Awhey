@@ -34,5 +34,6 @@ button.perigo { background: #dc2626; }
 .linha { display: grid; gap: 12px; align-items: center; padding: 12px 8px; border-bottom: 1px solid #e5e7eb; }
 .linha.turma { grid-template-columns: 1.2fr 1.5fr 1fr; }
 .linha.professor { grid-template-columns: 1.2fr 1.5fr .7fr 1fr; }
+.linha.aluno { grid-template-columns: 1.2fr 1.5fr 1fr; }
 .cabecalho { font-weight: 700; background: #f3f4f6; }
 @media (max-width: 700px) { .linha { min-width: 650px; } .container { margin: 16px; padding: 20px; } }
