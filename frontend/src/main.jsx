@@ -53,10 +53,11 @@ function PainelProfessor({ professor, aoSair }) {
   useEffect(() => {
     const carregarListas = async () => {
       try {
-        const [turmasResposta, alunosResposta] = await Promise.all([fetch('/api/turmas'), fetch('/api/alunos')]);
+        const filtroProfessor = `?professorId=${professor.id}`;
+        const [turmasResposta, alunosResposta] = await Promise.all([fetch(`/api/turmas${filtroProfessor}`), fetch(`/api/alunos${filtroProfessor}`)]);
         if (!turmasResposta.ok || !alunosResposta.ok) throw new Error('Não foi possível carregar suas turmas e alunos.');
         const [turmasRecebidas, alunosRecebidos] = await Promise.all([turmasResposta.json(), alunosResposta.json()]);
-        setTurmas(turmasRecebidas.filter((turma) => turma.professorId === professor.id));
+        setTurmas(turmasRecebidas);
         setAlunos(alunosRecebidos);
       } catch (error) {
         setErro(error.message);

@@ -25,6 +25,14 @@ database.exec(`
     nome TEXT NOT NULL,
     professor_id INTEGER NOT NULL,
     FOREIGN KEY (professor_id) REFERENCES professores (id)
+  );
+
+  CREATE TABLE IF NOT EXISTS professor_alunos (
+    professor_id INTEGER NOT NULL,
+    aluno_id INTEGER NOT NULL,
+    PRIMARY KEY (professor_id, aluno_id),
+    FOREIGN KEY (professor_id) REFERENCES professores (id) ON DELETE CASCADE,
+    FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
   )
 `);
 
