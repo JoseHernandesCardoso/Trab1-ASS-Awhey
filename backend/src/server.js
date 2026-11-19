@@ -58,6 +58,10 @@ app.get('/api/alunos', (request, response) => {
   response.json(alunos);
 });
 
+app.get('/api/alunos/todos', (_request, response) => {
+  response.json(database.prepare('SELECT id, nome, email FROM alunos ORDER BY nome').all());
+});
+
 app.post('/api/professores/:professorId/alunos/:alunoId', (request, response) => {
   const professorId = Number(request.params.professorId);
   const alunoId = Number(request.params.alunoId);
@@ -113,11 +117,20 @@ app.delete('/api/alunos/:id', (request, response) => {
   response.status(204).send();
 });
 
+const alunosDaTurma = (turmaId) => database.prepare(`
+  SELECT alunos.id, alunos.nome, alunos.email
+  FROM alunos
+  JOIN turma_alunos ON turma_alunos.aluno_id = alunos.id
+  WHERE turma_alunos.turma_id = ?
+  ORDER BY alunos.nome
+`).all(turmaId).map(alunoPublico);
+
 const turmaPublica = (turma) => ({
   id: turma.id,
   nome: turma.nome,
   professorId: turma.professor_id,
-  professorNome: turma.professor_nome
+  professorNome: turma.professor_nome,
+  alunos: turma.alunos || alunosDaTurma(turma.id)
 });
 
 const dadosDaTurma = (body) => ({
@@ -144,7 +157,7 @@ app.get('/api/turmas', (request, response) => {
     WHERE turmas.professor_id = ?
     ORDER BY turmas.nome
   `).all(professorId);
-  response.json(turmas.map(turmaPublica));
+  response.json(turmas.map((turma) => turmaPublica(turma)));
 });
 
 app.get('/api/turmas/:id', (request, response) => {
@@ -155,14 +168,23 @@ app.get('/api/turmas/:id', (request, response) => {
 
 app.post('/api/turmas', (request, response) => {
   const { nome, professorId } = dadosDaTurma(request.body);
+  const alunoIds = [...new Set(Array.isArray(request.body.alunoIds) ? request.body.alunoIds.map(Number).filter((id) => Number.isInteger(id) && id > 0) : [])];
   if (!nome || !Number.isInteger(professorId) || professorId < 1) {
     return response.status(400).json({ erro: 'Nome e professor são obrigatórios.' });
   }
+  if (alunoIds.length < 2) return response.status(400).json({ erro: 'A turma deve ter pelo menos 2 alunos.' });
   const professor = database.prepare('SELECT id FROM professores WHERE id = ?').get(professorId);
   if (!professor) return response.status(400).json({ erro: 'Professor não encontrado.' });
+  const alunosExistentes = database.prepare(`SELECT id FROM alunos WHERE id IN (${alunoIds.map(() => '?').join(',')})`).all(...alunoIds);
+  if (alunosExistentes.length !== alunoIds.length) return response.status(400).json({ erro: 'Um ou mais alunos não foram encontrados.' });
 
-  const resultado = database.prepare('INSERT INTO turmas (nome, professor_id) VALUES (?, ?)').run(nome, professorId);
-  response.status(201).json(turmaPublica(buscarTurma(resultado.lastInsertRowid)));
+  const criarTurma = database.transaction(() => {
+    const resultado = database.prepare('INSERT INTO turmas (nome, professor_id) VALUES (?, ?)').run(nome, professorId);
+    const associar = database.prepare('INSERT INTO turma_alunos (turma_id, aluno_id) VALUES (?, ?)');
+    alunoIds.forEach((alunoId) => associar.run(resultado.lastInsertRowid, alunoId));
+    return resultado.lastInsertRowid;
+  });
+  response.status(201).json(turmaPublica(buscarTurma(criarTurma())));
 });
 
 app.put('/api/turmas/:id', (request, response) => {

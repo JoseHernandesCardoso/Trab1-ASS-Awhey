@@ -63,19 +63,37 @@ function Lista({ titulo, itens, mensagemVazia, renderizarItem }) {
 
 function CriarTurma({ professor, aoVoltar, aoCriar }) {
   const [nome, setNome] = useState('');
+  const [alunos, setAlunos] = useState([]);
+  const [alunosSelecionados, setAlunosSelecionados] = useState([]);
+  const [carregandoAlunos, setCarregandoAlunos] = useState(true);
   const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/alunos/todos')
+      .then((resposta) => resposta.json().then((dados) => ({ resposta, dados })))
+      .then(({ resposta, dados }) => {
+        if (!resposta.ok) throw new Error(dados.erro || 'Não foi possível carregar os alunos.');
+        setAlunos(dados);
+      })
+      .catch((error) => setErro(error.message))
+      .finally(() => setCarregandoAlunos(false));
+  }, []);
 
   const criar = async (evento) => {
     evento.preventDefault();
     setErro('');
+    if (alunosSelecionados.length < 2) {
+      setErro('Selecione pelo menos 2 alunos para criar a turma.');
+      return;
+    }
     setSalvando(true);
 
     try {
       const resposta = await fetch('/api/turmas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, professorId: professor.id }),
+        body: JSON.stringify({ nome, professorId: professor.id, alunoIds: alunosSelecionados }),
       });
       const dados = await resposta.json();
       if (!resposta.ok) throw new Error(dados.erro || 'Não foi possível criar a turma.');
@@ -101,6 +119,16 @@ function CriarTurma({ professor, aoVoltar, aoCriar }) {
         <input id="nome-turma" type="text" value={nome} onChange={(evento) => setNome(evento.target.value)} placeholder="Ex.: Funcional iniciante" autoFocus required />
       </label>
       <p className="informacao-vinculo">Professor responsável: <strong>{professor.nome}</strong></p>
+      <fieldset className="selecao-alunos">
+        <legend>Alunos da turma</legend>
+        {carregandoAlunos && <p className="estado">Carregando alunos...</p>}
+        {!carregandoAlunos && alunos.length === 0 && <p className="estado-vazio">Nenhum aluno cadastrado.</p>}
+        {!carregandoAlunos && alunos.map((aluno) => <label className="opcao-aluno" key={aluno.id}>
+          <input type="checkbox" checked={alunosSelecionados.includes(aluno.id)} onChange={() => setAlunosSelecionados((selecionados) => selecionados.includes(aluno.id) ? selecionados.filter((id) => id !== aluno.id) : [...selecionados, aluno.id])} />
+          <span>{aluno.nome}<small>{aluno.email}</small></span>
+        </label>)}
+        <p className="ajuda-selecao">Selecione no mínimo 2 alunos ({alunosSelecionados.length} selecionados).</p>
+      </fieldset>
       {erro && <p className="erro" role="alert">{erro}</p>}
       <div className="acoes-formulario">
         <button className="botao-secundario" type="button" onClick={aoVoltar}>Cancelar</button>
@@ -150,7 +178,7 @@ function PainelProfessor({ professor, aoSair, aoCriarTurma }) {
     {carregando && <p className="estado">Carregando suas informações...</p>}
     {erro && <p className="erro" role="alert">{erro}</p>}
     {!carregando && !erro && <div className="listas">
-      <Lista titulo="Turmas" itens={turmas} mensagemVazia="Você ainda não possui turmas." renderizarItem={(turma) => <li className="item-lista" key={turma.id}><span className="icone-item">T</span><span>{turma.nome}</span></li>} />
+      <Lista titulo="Turmas" itens={turmas} mensagemVazia="Você ainda não possui turmas." renderizarItem={(turma) => <li className="item-lista turma-item" key={turma.id}><span className="icone-item">T</span><span><strong>{turma.nome}</strong><small>{turma.alunos?.length ? `Alunos: ${turma.alunos.map((aluno) => aluno.nome).join(', ')}` : 'Nenhum aluno associado'}</small></span></li>} />
       <Lista titulo="Alunos" itens={alunos} mensagemVazia="Você ainda não possui alunos vinculados." renderizarItem={(aluno) => <li className="item-lista" key={aluno.id}><span className="icone-item aluno">{aluno.nome.charAt(0).toUpperCase()}</span><span><strong>{aluno.nome}</strong><small>{aluno.email}</small></span></li>} />
     </div>}
   </main>;
